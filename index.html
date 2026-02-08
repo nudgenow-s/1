@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>数字资产印钞机 - 旗舰版</title>
+    <style>
+        body { font-family: 'Segoe UI', monospace; background: #f4f7f6; padding: 40px; }
+        .card { background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+        input, select { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 6px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #2c3e50; color: white; border: none; border-radius: 6px; cursor: pointer; font-weight: bold; }
+        button:hover { background: #34495e; }
+        textarea { width: 100%; height: 200px; margin-top: 20px; font-family: monospace; padding: 10px; box-sizing: border-box; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>💎 授权码生产中心</h2>
+        <label>秘密盐值 (PRIVATE_SALT):</label>
+        <input type="text" id="salt" value="INTJ_ARCHITECT_2026_PRO">
+        
+        <label>自定义前缀 (4位，如 TEST, VNDA, FREE):</label>
+        <input type="text" id="prefixTag" value="TEST" maxlength="4">
+        
+        <label>生产数量:</label>
+        <input type="number" id="count" value="10">
+        
+        <button onclick="generate()">生成并导出加密激活码</button>
+        <textarea id="output" readonly placeholder="等待印钞..."></textarea>
+    </div>
+
+    <script>
+        async function generate() {
+            const salt = document.getElementById('salt').value;
+            const tag = document.getElementById('prefixTag').value.toUpperCase().padEnd(4, 'X').substring(0,4);
+            const count = document.getElementById('count').value;
+            const output = document.getElementById('output');
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let results = [];
+
+            for (let i = 0; i < count; i++) {
+                // 生成8位随机后缀（总共12位特征位，4位前缀+8位随机）
+                let randomPart = '';
+                for (let j = 0; j < 8; j++) {
+                    randomPart += chars.charAt(Math.floor(Math.random() * chars.length));
+                }
+                const prefix = tag + randomPart;
+
+                // SHA-256 计算验证位
+                const msgUint8 = new TextEncoder().encode(prefix + salt);
+                const hashBuffer = await crypto.subtle.digest('SHA-256', msgUint8);
+                const hashArray = Array.from(new Uint8Array(hashBuffer));
+                const suffix = hashArray.map(b => b.toString(16).padStart(2, '0')).join('').substring(0, 8);
+
+                results.push(prefix + suffix.toUpperCase());
+            }
+            output.value = results.join('\n');
+        }
+    </script>
+</body>
+</html>
